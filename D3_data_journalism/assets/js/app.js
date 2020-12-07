@@ -58,7 +58,8 @@ d3.csv("./assets/data/data.csv").then(function (healthData) {
         .attr('class', 'healthCircle') //give each circle class healthCircle
         .attr('r', 20) //assign radius
         .attr("cx", function (d) { return xScale(d.age) }) // Position the circles based on their x attributes.
-        .attr("cy", function (d) { return yScale(d.obesity) }); // Position the circles based on their y attributes.
+        .attr("cy", function (d) { return yScale(d.obesity) })  // Position the circles based on their y attributes.
+        .attr("transform", `translate(${chartMargin.left},0)`)
 
     // add text to data markers:
     var text = svg.selectAll('text') //select all elements with class healthCircle. 
@@ -67,16 +68,17 @@ d3.csv("./assets/data/data.csv").then(function (healthData) {
         .attr("x", function (d) { return xScale(d.age) }) // Position the test based on their x attributes.
         .attr("y", function (d) { return yScale(d.obesity) }) // Position the test based on their y attributes.
         .text(function (d) { return d.abbr; })
-        .attr('dx', -10) //moves text left/right
+        .attr('dx', 100) //moves text left/right
         .attr('dy', 5) //moves text up/down
-        .style('fill', 'white'); 
+        .style('fill', 'orange'); 
 
     var xAxis = d3.axisBottom(xScale);
     var yAxis = d3.axisLeft(yScale);
 
     var xAxisGroup = svg.append("g")
         .style("font", "30px times")
-        .attr('class', 'axis').call(xAxis).attr("transform", `translate(0,${svgHeight - chartMargin.bottom})`)
+        .attr('class', 'axis').call(xAxis).attr("transform", `translate(${chartMargin.left},${svgHeight - chartMargin.bottom})`)
+        // .attr('class', 'axis').call(xAxis).attr("transform", `translate(0,${svgHeight - chartMargin.bottom})`)
         .call(xAxis);
 
     var yAxisGroup = svg.append("g")
