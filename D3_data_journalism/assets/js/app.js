@@ -1,14 +1,14 @@
 // @TODO: YOUR CODE HERE!
 
-var svgWidth = 960;
-var svgHeight = 660;
+var svgWidth = 1500;
+var svgHeight = 1000;
 
 // Define the chart's margins as an object
 var chartMargin = {
-  top: 30,
-  right: 30,
-  bottom: 30,
-  left: 30
+    top: 0,
+    right: 0,
+    bottom: 100,
+    left: 110
 };
 
 // Define dimensions of the chart area
@@ -17,83 +17,87 @@ var chartHeight = svgHeight - chartMargin.top - chartMargin.bottom;
 
 // Select body, append SVG area to it, and set the dimensions
 var svg = d3
-  .select("body")
-  .append("svg")
-  .attr("height", svgHeight)
-  .attr("width", svgWidth) ;
-//   .attr("style", border:1px solid black) ;
+    .select("#scatter")
+    .append("svg")
+    .attr("height", svgHeight)
+    .attr("width", svgWidth);
 
-// load in data  
-d3.csv("./assets/data/data.csv").then(function(healthData) {
-    healthData.forEach(function(data) {
-        data.poverty = +data.poverty ;
-        data.age = +data.age ;
-        // console.log(data.age)
-        }) ;
-    console.log(healthData.poverty)
+// load in data from csv and assign as healthData
+d3.csv("./assets/data/data.csv").then(function (healthData) {
 
-    const xScale = d3.scaleLinear()
-    .domain([9.2,21.5])
-    .range([0 , svgWidth]) //scope of data going out / pixels 
+    // get x and y values (strings) & convert to numbers:
+    var plotX = healthData.map(stuff => stuff.age).map(Number);
+    var plotY = healthData.map(stuff => stuff.obesity).map(Number);
 
-    const yScale = d3.scaleLinear()
-    .domain([30.5, 44.1])
-    .range([0, svgHeight])
+    // get the min/max and range of x vals (to make plot values not sit on x axis):
+    var xExtent = d3.extent(plotX);
+    xRange = xExtent[1] - xExtent[0];
 
-    const circle = svg.selectAll('.healthCircle') //select all elements with class healthCircle.
-    .data(healthData) //attach the data
-    .enter().append('circle') //append one circle for each data point. 
-    .attr('class', 'healthCircle') //give each circle class healthCircle
-    .attr('r', 10) //assign radius
-    // Position the circles based on their x and y attributes. 
-    .attr("cx", function(d) { return xScale(d.poverty); })
-    .attr("cy", function(d) { return yScale(d.age); });
+    // get the min/max and range of y vals (to make plot values not sit on y axis):  
+    var yExtent = d3.extent(plotY);
+    yRange = yExtent[1] - yExtent[0];
 
-    const text = svg.selectAll('text') //select all elements with class healthCircle. 
-    .data(healthData) //attach the data
-    .enter().append('text')
-    .attr("x", function(d) { return xScale(d.poverty); })
-    .attr("y", function(d) { return yScale(d.age); })   
-    .text( function (d) { return d.age; }) 
-    .attr('dx', -15) //moves text 10px right
-    .attr('dy', -15); //moves text -10px up
+    // define padding so that data points do not sit on axes (in %):
+    var theXPad = 0.1;
+    var theYPad = 0.1;
 
-    const xAxis = d3.axisBottom(xScale);
-    const yAxis = d3.axisLeft(yScale);
+    // scale the x axis of the plot accordingly:
+    var xScale = d3.scaleLinear()
+        .domain([xExtent[0] - (xRange * theXPad), xExtent[1] + (xRange * theXPad)])
+        .range([0, svgWidth - chartMargin.left - chartMargin.right]);
 
-    const xAxisGroup = svg.append("g")
-    .attr("class", "x axis") //gives group the classes 'x' and 'axis'
-    .call(xAxis);
+    // scale the y axis of the plot accordingly (note the range...height comes first otherwise y-vals are inverted b/c plot origin is in upper/left):
+    var yScale = d3.scaleLinear()
+        .domain([yExtent[0] - (yRange * theYPad), yExtent[1] + (yRange * theYPad)])
+        .range([svgHeight -  chartMargin.top - chartMargin.bottom, 0]);
 
-    const yAxisGroup = svg.append("g")
-    .attr("class", "y axis") //gives group the classes 'y' and 'axis'
-    .call(yAxis);
+    // add data markers to plot:
+    var circle = svg.selectAll('.healthCircle') //select all elements with class healthCircle.
+        .data(healthData) //attach the data
+        .enter().append('circle') //append one circle for each data point. 
+        .attr('class', 'healthCircle') //give each circle class healthCircle
+        .attr('r', 20) //assign radius
+        .attr("cx", function (d) { return xScale(d.age) }) // Position the circles based on their x attributes.
+        .attr("cy", function (d) { return yScale(d.obesity) }); // Position the circles based on their y attributes.
 
-    }) ;
+    // add text to data markers:
+    var text = svg.selectAll('text') //select all elements with class healthCircle. 
+        .data(healthData) //attach the data
+        .enter().append('text')
+        .attr("x", function (d) { return xScale(d.age) }) // Position the test based on their x attributes.
+        .attr("y", function (d) { return yScale(d.obesity) }) // Position the test based on their y attributes.
+        .text(function (d) { return d.abbr; })
+        .attr('dx', -10) //moves text left/right
+        .attr('dy', 5) //moves text up/down
+        .style('fill', 'white'); 
+
+    var xAxis = d3.axisBottom(xScale);
+    var yAxis = d3.axisLeft(yScale);
+
+    var xAxisGroup = svg.append("g")
+        .style("font", "30px times")
+        .attr('class', 'axis').call(xAxis).attr("transform", `translate(0,${svgHeight - chartMargin.bottom})`)
+        .call(xAxis);
+
+    var yAxisGroup = svg.append("g")
+        .style("font", "30px times")
+        .attr('class', 'axis').call(yAxis).attr("transform", `translate(${chartMargin.left},0)`)
+        .call(yAxis);
+
+    var xTitle = svg.append("text")
+    .style("text-anchor", "middle")
+    .style("font", "50px times")
+    .attr("x", (svgWidth/2))
+    .attr("y", (svgHeight- chartMargin.bottom/3))
+    .text("Age (years)");
+
+    var yTitle = svg.append("text")
+    .style("text-anchor", "middle")
+    .style("font", "50px times")
+    .attr("x", 0)
+    .attr("y", (svgHeight/2))
+    .text("Obesity") 
+    .attr("transform", "translate(-450, 500), rotate(-90)") ;
 
 
-
-
-
-    // for (var i = 0; i < healthData.length; i++) {
-    //     // console.log(data[i].id);
-    //     // console.log(data[i].state);
-    // // console.log(data)
-    // }
-
-
-var healthData = d3.csv("./assets/data/data.csv") ;
-
-function getCol(matrix, col) {
-    var newCol = [];
-    for(var i=0; i<matrix.length; i++){
-        newCol.push(matrix[i][col]);
-    }
-    return newCol; // return column data..
-    // console.log(column)
- }
-
- var array = [new Array(20), new Array(20), new Array(20)]; //..your 3x20 array
-
- getCol(array, 0); //Get first column
-// var testX = healthData.filter("Texas");
+});
